@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>المندوب — دلوقتي ماركت</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><h1>طلبات التوصيل</h1><button class="ghost hidden" id="out" style="color:#fff">خروج</button></header>
+<main>
+  <form id="login" class="card" style="max-width:360px;margin:2rem auto">
+    <label for="em">البريد الإلكتروني</label><input id="em" type="email" required autocomplete="username">
+    <label for="pw">كلمة المرور</label><input id="pw" type="password" required autocomplete="current-password">
+    <p id="err" class="msg err hidden"></p>
+    <button class="sun" style="width:100%;margin-top:.8rem">دخول</button>
+  </form>
+  <div id="list" class="hidden"></div>
+</main>
+<script type="module" src="courier.js"></script>
+</body>
+</html>
