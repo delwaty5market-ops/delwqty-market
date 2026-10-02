@@ -1,49 +1,345 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
 <title>الإدارة — دلوقتي ماركت</title>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+
+<link
+  href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap"
+  rel="stylesheet">
+
 <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-<header><h1>لوحة الإدارة</h1><button class="ghost hidden" id="out" style="color:#fff">خروج</button></header>
+
+<header>
+  <h1>لوحة الإدارة</h1>
+  <button class="ghost hidden" id="out" style="color:#fff">
+    خروج
+  </button>
+</header>
+
 <main>
+
+  <!-- تسجيل الدخول -->
   <form id="login" class="card" style="max-width:360px;margin:2rem auto">
-    <label for="em">البريد الإلكتروني</label><input id="em" type="email" required autocomplete="username">
-    <label for="pw">كلمة المرور</label><input id="pw" type="password" required autocomplete="current-password">
+
+    <label for="em">
+      البريد الإلكتروني
+    </label>
+
+    <input
+      id="em"
+      type="email"
+      required
+      autocomplete="username"
+    >
+
+    <label for="pw">
+      كلمة المرور
+    </label>
+
+    <input
+      id="pw"
+      type="password"
+      required
+      autocomplete="current-password"
+    >
+
     <p id="err" class="msg err hidden"></p>
-    <button class="sun" style="width:100%;margin-top:.8rem">دخول</button>
+
+    <button
+      class="sun"
+      style="width:100%;margin-top:.8rem"
+    >
+      دخول
+    </button>
+
   </form>
 
+
+  <!-- لوحة الإدارة -->
   <div id="app" class="hidden">
-    <div class="tabs"><button data-t="orders" class="on">الطلبات</button><button data-t="products">المنتجات</button><button data-t="settings">الإعدادات</button></div>
+
+    <!-- التبويبات -->
+    <div class="tabs">
+
+      <button
+        data-t="orders"
+        class="on"
+      >
+        الطلبات
+      </button>
+
+      <button
+        data-t="products"
+      >
+        المنتجات
+      </button>
+
+      <button
+        data-t="settings"
+      >
+        الإعدادات
+      </button>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- الطلبات -->
+    <!-- ========================= -->
 
     <section id="orders"></section>
 
+
+    <!-- ========================= -->
+    <!-- المنتجات -->
+    <!-- ========================= -->
+
     <section id="products" class="hidden">
+
       <form id="pf" class="card">
-        <input type="hidden" id="pid">
-        <label for="pn">اسم المنتج</label><input id="pn" required maxlength="80">
-        <div class="row"><div style="flex:1"><label for="pp">السعر</label><input id="pp" type="number" min="0" step="0.5" required></div>
-        <div style="flex:1"><label for="ps">المخزون</label><input id="ps" type="number" min="0" step="1" required></div></div>
-        <label for="pi">رابط الصورة</label><input id="pi" type="url" placeholder="https://...">
-        <label><input id="pa" type="checkbox" checked style="width:auto"> ظاهر للعملاء</label>
-        <button class="sun" style="margin-top:.6rem">حفظ المنتج</button>
-        <button type="button" class="ghost" id="pc">جديد</button>
+
+        <!-- معرف المنتج -->
+        <input
+          type="hidden"
+          id="pid"
+        >
+
+
+        <!-- اسم المنتج -->
+        <label for="pn">
+          اسم المنتج
+        </label>
+
+        <input
+          id="pn"
+          required
+          maxlength="80"
+          placeholder="مثال: زيت عباد الشمس"
+        >
+
+
+        <!-- القسم -->
+        <label for="pcat">
+          القسم
+        </label>
+
+        <select
+          id="pcat"
+          required
+        >
+
+          <option value="">
+            اختر القسم
+          </option>
+
+          <option value="بقالة">
+            🛒 بقالة
+          </option>
+
+          <option value="مشروبات">
+            🥤 مشروبات
+          </option>
+
+          <option value="ألبان">
+            🥛 ألبان
+          </option>
+
+          <option value="مخبوزات">
+            🍞 مخبوزات
+          </option>
+
+          <option value="منظفات">
+            🧴 منظفات
+          </option>
+
+          <option value="عناية شخصية">
+            🧼 عناية شخصية
+          </option>
+
+          <option value="مجمدات">
+            ❄️ مجمدات
+          </option>
+
+          <option value="حلويات">
+            🍫 حلويات
+          </option>
+
+          <option value="فواكه وخضروات">
+            🥬 فواكه وخضروات
+          </option>
+
+          <option value="معلبات">
+            🥫 معلبات
+          </option>
+
+          <option value="أخرى">
+            📦 أخرى
+          </option>
+
+        </select>
+
+
+        <!-- السعر والمخزون -->
+        <div class="row">
+
+          <div style="flex:1">
+
+            <label for="pp">
+              السعر
+            </label>
+
+            <input
+              id="pp"
+              type="number"
+              min="0"
+              step="0.5"
+              required
+              placeholder="0"
+            >
+
+          </div>
+
+
+          <div style="flex:1">
+
+            <label for="ps">
+              المخزون
+            </label>
+
+            <input
+              id="ps"
+              type="number"
+              min="0"
+              step="1"
+              required
+              placeholder="0"
+            >
+
+          </div>
+
+        </div>
+
+
+        <!-- صورة المنتج -->
+        <label for="pi">
+          رابط الصورة
+        </label>
+
+        <input
+          id="pi"
+          type="url"
+          placeholder="https://..."
+        >
+
+
+        <!-- حالة ظهور المنتج -->
+        <label>
+          <input
+            id="pa"
+            type="checkbox"
+            checked
+            style="width:auto"
+          >
+
+          ظاهر للعملاء
+        </label>
+
+
+        <!-- أزرار الحفظ -->
+        <button
+          class="sun"
+          style="margin-top:.6rem"
+        >
+          حفظ المنتج
+        </button>
+
+
+        <button
+          type="button"
+          class="ghost"
+          id="pc"
+        >
+          جديد
+        </button>
+
       </form>
-      <div id="plist" style="margin-top:1rem"></div>
+
+
+      <!-- قائمة المنتجات -->
+      <div
+        id="plist"
+        style="margin-top:1rem"
+      ></div>
+
     </section>
 
-    <section id="settings" class="hidden">
-      <form id="sf" class="card">
-        <label for="wa">رقم واتساب (بصيغة دولية، مثال 201001234567)</label><input id="wa" inputmode="numeric">
-        <label for="loc">رابط الموقع على الخريطة</label><input id="loc" type="url">
-        <button class="sun" style="margin-top:.6rem">حفظ الإعدادات</button>
+
+    <!-- ========================= -->
+    <!-- الإعدادات -->
+    <!-- ========================= -->
+
+    <section
+      id="settings"
+      class="hidden"
+    >
+
+      <form
+        id="sf"
+        class="card"
+      >
+
+        <!-- رقم واتساب المحل -->
+        <label for="wa">
+          رقم واتساب المحل
+          (بصيغة دولية، مثال 201001234567)
+        </label>
+
+        <input
+          id="wa"
+          inputmode="numeric"
+          placeholder="201001234567"
+        >
+
+
+        <!-- موقع المحل -->
+        <label for="loc">
+          رابط موقع المحل على الخريطة
+        </label>
+
+        <input
+          id="loc"
+          type="url"
+          placeholder="https://maps.google.com/..."
+        >
+
+
+        <!-- حفظ -->
+        <button
+          class="sun"
+          style="margin-top:.6rem"
+        >
+          حفظ الإعدادات
+        </button>
+
       </form>
+
     </section>
+
   </div>
+
 </main>
-<script type="module" src="admin.js"></script>
+
+
+<script
+  type="module"
+  src="admin.js"
+></script>
+
 </body>
 </html>
