@@ -2,338 +2,483 @@
 <html lang="ar" dir="rtl">
 
 <head>
+  <meta charset="utf-8">
 
-<meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,viewport-fit=cover"
+  >
 
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1"
->
+  <title>دلوقتي ماركت | كل احتياجاتك في مكان واحد</title>
 
-<title>دلوقتي ماركت</title>
+  <meta
+    name="description"
+    content="دلوقتي ماركت - اطلب احتياجاتك من السوبرماركت بسهولة"
+  >
 
-<link
-  rel="manifest"
-  href="manifest.webmanifest"
->
+  <meta name="theme-color" content="#0b1a4a">
 
-<meta
-  name="theme-color"
-  content="#0b1a4a"
->
+  <link rel="manifest" href="manifest.webmanifest">
 
-<link
-  href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap"
-  rel="stylesheet"
->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap"
+    rel="stylesheet"
+  >
 
-<link
-  rel="stylesheet"
-  href="style.css"
->
+  <link rel="stylesheet" href="style.css">
 
-<link
-  rel="icon"
-  href="logo.png"
->
-
+  <link rel="icon" href="logo.png">
 </head>
-
 
 <body>
 
+  <!-- =========================
+       الهيدر
+  ========================== -->
 
-<!-- =========================
-     الهيدر
-========================= -->
+  <header class="top-header">
 
-<header>
+    <div class="header-inner">
 
-  <h1>
+      <div class="brand">
 
-    <img
-      src="logo.png"
-      alt="دلوقتي ماركت"
+        <img
+          src="logo.png"
+          alt="دلوقتي ماركت"
+          class="logo"
+        >
+
+        <div>
+          <h1>دلوقتي ماركت</h1>
+          <span>كل احتياجاتك عندنا</span>
+        </div>
+
+      </div>
+
+      <a
+        id="wa"
+        class="header-wa hidden"
+        target="_blank"
+        rel="noopener"
+      >
+        <span>💬</span>
+        <span>واتساب</span>
+      </a>
+
+    </div>
+
+  </header>
+
+
+  <main>
+
+    <!-- =========================
+         الترحيب
+    ========================== -->
+
+    <section class="hero">
+
+      <div class="hero-content">
+
+        <span class="hero-small">
+          🛒 أهلاً بك في
+        </span>
+
+        <h2>
+          دلوقتي ماركت
+        </h2>
+
+        <p>
+          اطلب كل احتياجاتك بسهولة
+          واستلم طلبك عند باب البيت
+        </p>
+
+        <button
+          type="button"
+          class="hero-btn"
+          onclick="document.getElementById('productsSection').scrollIntoView({behavior:'smooth'})"
+        >
+          تسوق الآن
+          <span>←</span>
+        </button>
+
+      </div>
+
+      <div class="hero-icon">
+        🛍️
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         البحث
+    ========================== -->
+
+    <section class="search-section">
+
+      <div class="search-box">
+
+        <span class="search-icon">
+          🔎
+        </span>
+
+        <input
+          id="q"
+          type="search"
+          placeholder="ابحث عن منتج..."
+          aria-label="بحث عن منتج"
+          autocomplete="off"
+        >
+
+        <button
+          type="button"
+          id="clearSearch"
+          class="clear-search hidden"
+          aria-label="مسح البحث"
+        >
+          ×
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         الأقسام
+    ========================== -->
+
+    <section class="categories-section">
+
+      <div class="section-head">
+
+        <div>
+          <span class="section-kicker">
+            تصفح
+          </span>
+
+          <h2>
+            الأقسام
+          </h2>
+        </div>
+
+      </div>
+
+      <div
+        id="categories"
+        class="categories"
+        aria-label="أقسام المنتجات"
+      ></div>
+
+    </section>
+
+
+    <!-- =========================
+         شريط المزايا
+    ========================== -->
+
+    <section class="features">
+
+      <div class="feature">
+        <span>🚚</span>
+        <div>
+          <strong>توصيل للباب</strong>
+          <small>اطلب واستلم بسهولة</small>
+        </div>
+      </div>
+
+      <div class="feature">
+        <span>📍</span>
+        <div>
+          <strong>تحديد الموقع</strong>
+          <small>موقعك يصل للمحل</small>
+        </div>
+      </div>
+
+      <div class="feature">
+        <span>💬</span>
+        <div>
+          <strong>واتساب</strong>
+          <small>تأكيد الطلب بسهولة</small>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         المنتجات
+    ========================== -->
+
+    <section
+      id="productsSection"
+      class="products-section"
     >
 
-    دلوقتي ماركت
+      <div class="section-head">
 
-  </h1>
+        <div>
+          <span class="section-kicker">
+            دلوقتي ماركت
+          </span>
 
+          <h2>
+            المنتجات
+          </h2>
+        </div>
 
-  <a
-    id="wa"
-    class="hidden"
-    style="color:#fff"
-    target="_blank"
-    rel="noopener"
-  >
-    واتساب
-  </a>
+        <span id="productsCount" class="products-count"></span>
 
-</header>
-
+      </div>
 
 
-<main>
+      <p
+        id="empty"
+        class="empty hidden"
+      >
+        لا توجد منتجات مطابقة.
+      </p>
 
 
-  <!-- =========================
-       البحث
-  ========================= -->
+      <div
+        id="list"
+        class="products-grid"
+      ></div>
 
-  <input
-    id="q"
-    placeholder="ابحث عن منتج"
-    aria-label="بحث عن منتج"
-    autocomplete="off"
-  >
+    </section>
 
-
-
-  <!-- =========================
-       الأقسام
-  ========================= -->
-
-  <div
-    id="categories"
-    class="tabs"
-    style="margin-top:1rem;overflow-x:auto"
-    aria-label="أقسام المنتجات"
-  >
-
-    <button
-      type="button"
-      class="on"
-      data-category="all"
-    >
-      🛍️ الكل
-    </button>
-
-  </div>
-
+  </main>
 
 
   <!-- =========================
-       لا توجد منتجات
-  ========================= -->
+       السلة
+  ========================== -->
 
-  <p
-    id="empty"
-    class="hidden"
+  <section
+    id="cart"
+    class="cart-bar hidden"
+    aria-live="polite"
   >
-    لا توجد منتجات مطابقة.
-  </p>
 
+    <div class="cart-top">
 
+      <div class="cart-summary">
 
-  <!-- =========================
-       المنتجات
-  ========================= -->
+        <span class="cart-bag">
+          🛒
+        </span>
 
-  <div
-    id="list"
-    class="grid"
-    style="margin-top:1rem;margin-bottom:6rem"
-  ></div>
+        <div>
 
+          <strong id="sum">
+            السلة فارغة
+          </strong>
 
-</main>
+          <small>
+            راجع طلبك قبل التأكيد
+          </small>
 
+        </div>
 
+      </div>
 
-<!-- =========================
-     السلة
-========================= -->
-
-<section
-  id="cart"
-  class="cart hidden"
-  aria-live="polite"
->
-
-
-  <div class="row">
-
-    <strong id="sum"></strong>
-
-    <span>
 
       <button
-        class="ghost"
+        class="cart-toggle"
         id="toggle"
         type="button"
       >
         عرض السلة
       </button>
 
-    </span>
-
-  </div>
-
-
-
-  <!-- تفاصيل السلة -->
-
-  <div
-    id="detail"
-    class="hidden"
-  >
-
-
-    <!-- المنتجات الموجودة بالسلة -->
-
-    <div id="lines"></div>
-
-
-
-    <!-- =========================
-         بيانات العميل
-    ========================= -->
-
-    <label for="name">
-      الاسم
-    </label>
-
-    <input
-      id="name"
-      maxlength="80"
-      autocomplete="name"
-      placeholder="اكتب اسمك"
-    >
-
-
-
-    <label for="phone">
-      رقم الموبايل
-    </label>
-
-    <input
-      id="phone"
-      type="tel"
-      maxlength="20"
-      autocomplete="tel"
-      placeholder="01xxxxxxxxx"
-    >
-
-
-
-    <label for="addr">
-      العنوان بالتفصيل
-    </label>
-
-    <textarea
-      id="addr"
-      rows="2"
-      maxlength="300"
-      placeholder="اكتب عنوان التوصيل بالتفصيل"
-    ></textarea>
-
-
-
-    <!-- =========================
-         تحديد الموقع
-    ========================= -->
-
-    <div
-      id="locationBox"
-      class="card"
-      style="margin-top:1rem"
-    >
-
-      <strong>
-        📍 موقع التوصيل
-      </strong>
-
-
-      <p
-        id="locationStatus"
-        class="msg"
-        style="margin:.5rem 0"
-      >
-        لم يتم تحديد موقعك بعد.
-      </p>
-
-
-      <button
-        type="button"
-        class="ghost"
-        id="getLocation"
-        style="width:100%"
-      >
-        📍 تحديد موقعي على الخريطة
-      </button>
-
-
-      <a
-        id="customerMap"
-        href="#"
-        target="_blank"
-        rel="noopener"
-        class="hidden"
-        style="display:block;margin-top:.5rem"
-      >
-        📍 فتح موقعي على Google Maps
-      </a>
-
     </div>
 
 
+    <!-- تفاصيل السلة -->
 
-    <!-- رسالة الحالة -->
-
-    <p
-      id="status"
-      class="msg hidden"
-    ></p>
-
-
-
-    <!-- تأكيد الطلب -->
-
-    <button
-      class="sun"
-      id="send"
-      type="button"
-      style="width:100%;margin-top:.8rem"
+    <div
+      id="detail"
+      class="cart-detail hidden"
     >
-      تأكيد الطلب
-    </button>
+
+      <div class="cart-title">
+        <h3>مراجعة الطلب</h3>
+        <span>🧾</span>
+      </div>
 
 
-  </div>
+      <!-- المنتجات -->
 
-</section>
-
-
-
-<!-- =========================
-     JavaScript
-========================= -->
-
-<script
-  type="module"
-  src="app.js"
-></script>
+      <div id="lines"></div>
 
 
-<script>
+      <!-- بيانات العميل -->
 
-if ("serviceWorker" in navigator) {
+      <div class="checkout-card">
 
-  navigator.serviceWorker.register("sw.js")
-    .catch(error => {
-      console.error(
-        "Service Worker registration failed:",
-        error
-      );
-    });
+        <h3>
+          📦 بيانات التوصيل
+        </h3>
 
-}
+        <label for="name">
+          الاسم
+        </label>
 
-</script>
+        <input
+          id="name"
+          maxlength="80"
+          autocomplete="name"
+          placeholder="اكتب اسمك"
+        >
 
+
+        <label for="phone">
+          رقم الموبايل
+        </label>
+
+        <input
+          id="phone"
+          type="tel"
+          maxlength="20"
+          autocomplete="tel"
+          placeholder="01xxxxxxxxx"
+        >
+
+
+        <label for="addr">
+          العنوان بالتفصيل
+        </label>
+
+        <textarea
+          id="addr"
+          rows="3"
+          maxlength="300"
+          placeholder="اكتب عنوان التوصيل بالتفصيل"
+        ></textarea>
+
+
+        <!-- GPS -->
+
+        <div
+          id="locationBox"
+          class="location-card"
+        >
+
+          <div class="location-title">
+
+            <span class="location-pin">
+              📍
+            </span>
+
+            <div>
+              <strong>
+                موقع التوصيل
+              </strong>
+
+              <small>
+                يساعدنا نوصل لك بدقة
+              </small>
+            </div>
+
+          </div>
+
+
+          <p
+            id="locationStatus"
+            class="location-status"
+          >
+            لم يتم تحديد موقعك بعد.
+          </p>
+
+
+          <button
+            type="button"
+            class="location-btn"
+            id="getLocation"
+          >
+            📍 تحديد موقعي على الخريطة
+          </button>
+
+
+          <a
+            id="customerMap"
+            href="#"
+            target="_blank"
+            rel="noopener"
+            class="map-link hidden"
+          >
+            📍 فتح موقعي على Google Maps
+          </a>
+
+        </div>
+
+
+        <!-- رسالة الحالة -->
+
+        <p
+          id="status"
+          class="msg hidden"
+        ></p>
+
+
+        <!-- تأكيد -->
+
+        <button
+          class="confirm-btn"
+          id="send"
+          type="button"
+        >
+          تأكيد الطلب
+          <span>←</span>
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       الفوتر
+  ========================== -->
+
+  <footer>
+
+    <strong>
+      دلوقتي ماركت
+    </strong>
+
+    <span>
+      كل احتياجاتك في مكان واحد 🛒
+    </span>
+
+  </footer>
+
+
+  <script
+    type="module"
+    src="app.js"
+  ></script>
+
+
+  <script>
+
+    if ("serviceWorker" in navigator) {
+
+      navigator.serviceWorker
+        .register("sw.js")
+        .catch(error => {
+          console.error(
+            "Service Worker registration failed:",
+            error
+          );
+        });
+
+    }
+
+  </script>
 
 </body>
-
 </html>
