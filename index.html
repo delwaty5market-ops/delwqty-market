@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>دلوقتي ماركت</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f6b57">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><h1>دلوقتي ماركت</h1><a id="wa" class="hidden" style="color:#fff" target="_blank" rel="noopener">واتساب</a></header>
+<main>
+  <input id="q" placeholder="ابحث عن منتج" aria-label="بحث">
+  <p id="empty" class="hidden">لا توجد منتجات مطابقة.</p>
+  <div id="list" class="grid" style="margin-top:1rem;margin-bottom:6rem"></div>
+</main>
+
+<section id="cart" class="cart hidden" aria-live="polite">
+  <div class="row"><strong id="sum"></strong>
+    <span><button class="ghost" id="toggle">عرض السلة</button></span></div>
+  <div id="detail" class="hidden">
+    <div id="lines"></div>
+    <label for="name">الاسم</label><input id="name" maxlength="80" autocomplete="name">
+    <label for="phone">رقم الموبايل</label><input id="phone" type="tel" maxlength="20" autocomplete="tel">
+    <label for="addr">العنوان بالتفصيل</label><textarea id="addr" rows="2" maxlength="300"></textarea>
+    <p id="status" class="msg hidden"></p>
+    <button class="sun" id="send" style="width:100%;margin-top:.8rem">تأكيد الطلب</button>
+  </div>
+</section>
+
+<script type="module" src="app.js"></script>
+<script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js")</script>
+</body>
+</html>
