@@ -2,728 +2,387 @@ import {
   db,
   esc,
   collection,
+  doc,
+  getDoc,
   addDoc,
   onSnapshot,
-  doc,
+  query,
+  orderBy,
   serverTimestamp
 } from "./config.js";
 
-
-const $ = selector => document.querySelector(selector);
-
-
-/* =====================================================
-   المتغيرات
-===================================================== */
+const CATEGORIES = [
+  { id: "all", name: "الكل", icon: "🛍️" },
+  { id: "بقالة", name: "بقالة", icon: "🛒" },
+  { id: "مشروبات", name: "مشروبات", icon: "🥤" },
+  { id: "ألبان", name: "ألبان", icon: "🥛" },
+  { id: "مخبوزات", name: "مخبوزات", icon: "🍞" },
+  { id: "منظفات", name: "منظفات", icon: "🧴" },
+  { id: "عناية شخصية", name: "عناية شخصية", icon: "🧼" },
+  { id: "مجمدات", name: "مجمدات", icon: "❄️" },
+  { id: "حلويات", name: "حلويات", icon: "🍫" },
+  { id: "فواكه وخضروات", name: "فواكه وخضروات", icon: "🥬" },
+  { id: "معلبات", name: "معلبات", icon: "🥫" },
+  { id: "أخرى", name: "أخرى", icon: "📦" }
+];
 
 let products = [];
-let cart = {};
+let cart = JSON.parse(localStorage.getItem("cart") || "{}");
+let selectedCategory = "all";
 
 let storeWhatsapp = "";
 let storeLocation = "";
 
-let selectedCategory = "all";
-
 let customerLocation = null;
 
+const $ = id => document.getElementById(id);
 
-/* =====================================================
+function saveCart() {
+  localStorage.setItem("cart", JSON.stringify(cart));
+}
+
+function formatPrice(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "0";
+  return n.toLocaleString("ar-EG");
+}
+
+function getCategory(product) {
+  const category = String(product?.category || "").trim();
+
+  if (category && CATEGORIES.some(c => c.id === category)) {
+    return category;
+  }
+
+  return "أخرى";
+}
+
+function getCategoryInfo(category) {
+  return CATEGORIES.find(c => c.id === category) || CATEGORIES[CATEGORIES.length - 1];
+}
+
+function normalizeProduct(id, data) {
+  const p = data || {};
+
+  return {
+    id,
+    name: String(p.name ?? "").trim(),
+    price: Number(p.price ?? 0),
+    stock: Math.max(0, Number(p.stock ?? 0)),
+    image: String(p.image ?? "").trim(),
+    active: p.active !== false,
+    category: getCategory(p)
+  };
+}
+
+/* =========================
    الأقسام
-===================================================== */
-
-const CATEGORIES = {
-  "بقالة": "🛒 بقالة",
-  "مشروبات": "🥤 مشروبات",
-  "ألبان": "🥛 ألبان",
-  "مخبوزات": "🍞 مخبوزات",
-  "منظفات": "🧴 منظفات",
-  "عناية شخصية": "🧼 عناية شخصية",
-  "مجمدات": "❄️ مجمدات",
-  "حلويات": "🍫 حلويات",
-  "فواكه وخضروات": "🥬 فواكه وخضروات",
-  "معلبات": "🥫 معلبات",
-  "أخرى": "📦 أخرى"
-};
-
-
-/* =====================================================
-   تحميل السلة من الجهاز
-===================================================== */
-
-try {
-
-  const saved =
-    JSON.parse(
-      localStorage.getItem("cart") || "{}"
-    );
-
-
-  if (
-    saved &&
-    typeof saved === "object" &&
-    !Array.isArray(saved)
-  ) {
-
-    cart = saved;
-
-  }
-
-} catch {
-
-  cart = {};
-
-}
-
-
-/* =====================================================
-   أدوات مساعدة
-===================================================== */
-
-const saveCart = () => {
-
-  localStorage.setItem(
-    "cart",
-    JSON.stringify(cart)
-  );
-
-};
-
-
-const fmt = number => {
-
-  const value =
-    Number(number) || 0;
-
-  return (
-    value.toLocaleString("ar-EG") +
-    " ج.م"
-  );
-
-};
-
-
-const normalizeText = value => {
-
-  return String(value || "")
-    .trim()
-    .toLocaleLowerCase("ar-EG");
-
-};
-
-
-const safeImageUrl = url => {
-
-  if (!url) return "";
-
-  try {
-
-    const parsed =
-      new URL(
-        String(url),
-        window.location.href
-      );
-
-
-    if (
-      parsed.protocol === "http:" ||
-      parsed.protocol === "https:"
-    ) {
-
-      return parsed.href;
-
-    }
-
-
-    return "";
-
-  } catch {
-
-    return "";
-
-  }
-
-};
-
-
-const getProduct = id => {
-
-  return products.find(
-    product => product.id === id
-  );
-
-};
-
-
-/* =====================================================
-   إنشاء واجهة الأقسام والموقع
-===================================================== */
-
-function setupExtraUI() {
-
-  /*
-   * إذا لم يكن هناك عنصر للأقسام في index.html
-   * ننشئه تلقائيًا.
-   */
-
-  if (!$("#categories") && $("#list")) {
-
-    const categories = document.createElement("div");
-
-    categories.id = "categories";
-
-    categories.className = "tabs";
-
-    categories.style.marginBottom = "1rem";
-
-    $("#list").parentNode.insertBefore(
-      categories,
-      $("#list")
-    );
-
-  }
-
-
-  /*
-   * واجهة تحديد الموقع
-   */
-
-  if (
-    !$("#locationBox") &&
-    $("#send")
-  ) {
-
-    const box =
-      document.createElement("div");
-
-    box.id = "locationBox";
-
-    box.className = "card";
-
-    box.style.marginTop = "1rem";
-
-
-    box.innerHTML = `
-      <strong>
-        📍 موقع التوصيل
-      </strong>
-
-      <p
-        id="locationStatus"
-        class="msg"
-        style="margin:.5rem 0"
-      >
-        لم يتم تحديد موقعك بعد.
-      </p>
-
-      <button
-        type="button"
-        class="ghost"
-        id="getLocation"
-        style="width:100%"
-      >
-        📍 تحديد موقعي على الخريطة
-      </button>
-
-      <a
-        id="customerMap"
-        href="#"
-        target="_blank"
-        rel="noopener"
-        class="hidden"
-        style="display:block;margin-top:.5rem"
-      >
-        فتح موقعي على Google Maps
-      </a>
-    `;
-
-
-    $("#send").parentNode.insertBefore(
-      box,
-      $("#send")
-    );
-
-  }
-
-}
-
-
-/* تشغيل الواجهة الإضافية */
-
-setupExtraUI();
-
-
-/* =====================================================
-   Firebase - المنتجات
-===================================================== */
-
-onSnapshot(
-  collection(db, "products"),
-
-  snapshot => {
-
-    products = snapshot.docs
-
-      .map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data()
-      }))
-
-      .filter(
-        product =>
-          product.active !== false
-      );
-
-
-    /*
-     * تنظيف السلة من المنتجات
-     * التي لم تعد موجودة أو متاحة
-     */
-
-    let changed = false;
-
-
-    for (
-      const id of Object.keys(cart)
-    ) {
-
-      const product =
-        getProduct(id);
-
-
-      if (!product) {
-
-        delete cart[id];
-
-        changed = true;
-
-        continue;
-      }
-
-
-      const stock =
-        Math.max(
-          0,
-          Number(product.stock) || 0
-        );
-
-
-      if (stock <= 0) {
-
-        delete cart[id];
-
-        changed = true;
-
-        continue;
-      }
-
-
-      const currentQty =
-        Math.max(
-          0,
-          Number(cart[id]) || 0
-        );
-
-
-      if (currentQty > stock) {
-
-        cart[id] = stock;
-
-        changed = true;
-
-      }
-
-
-      if (currentQty <= 0) {
-
-        delete cart[id];
-
-        changed = true;
-
-      }
-
-    }
-
-
-    if (changed) {
-
-      saveCart();
-
-    }
-
-
-    renderCategories();
-
-    renderList();
-
-    renderCart();
-
-  },
-
-  error => {
-
-    console.error(
-      "Products listener error:",
-      error
-    );
-
-
-    if ($("#empty")) {
-
-      $("#empty").classList.remove(
-        "hidden"
-      );
-
-      $("#empty").textContent =
-        "تعذر تحميل المنتجات حاليًا. حاول تحديث الصفحة.";
-
-    }
-
-  }
-);
-
-
-/* =====================================================
-   Firebase - إعدادات المتجر
-===================================================== */
-
-onSnapshot(
-  doc(db, "settings", "store"),
-
-  snapshot => {
-
-    if (!snapshot.exists()) {
-
-      storeWhatsapp = "";
-
-      storeLocation = "";
-
-      if ($("#wa")) {
-
-        $("#wa").classList.add(
-          "hidden"
-        );
-
-      }
-
-      return;
-
-    }
-
-
-    const data =
-      snapshot.data() || {};
-
-
-    /*
-     * رقم واتساب المحل
-     */
-
-    const whatsapp =
-      String(
-        data.whatsapp || ""
-      ).replace(/\D/g, "");
-
-
-    storeWhatsapp =
-      whatsapp;
-
-
-    /*
-     * رابط موقع المحل
-     */
-
-    storeLocation =
-      String(
-        data.location || ""
-      ).trim();
-
-
-    if (
-      whatsapp &&
-      $("#wa")
-    ) {
-
-      $("#wa").href =
-        "https://wa.me/" +
-        whatsapp;
-
-      $("#wa").classList.remove(
-        "hidden"
-      );
-
-    } else if ($("#wa")) {
-
-      $("#wa").classList.add(
-        "hidden"
-      );
-
-    }
-
-  },
-
-  error => {
-
-    console.error(
-      "Store settings error:",
-      error
-    );
-
-  }
-);
-
-
-/* =====================================================
-   عرض الأقسام
-===================================================== */
+========================= */
 
 function renderCategories() {
+  const box = $("categories");
+  if (!box) return;
 
-  const container =
-    $("#categories");
+  const available = new Set(
+    products.map(p => p.category)
+  );
 
+  box.innerHTML = CATEGORIES
+    .filter(c => c.id === "all" || available.has(c.id))
+    .map(c => `
+      <button
+        type="button"
+        class="ghost category-btn ${selectedCategory === c.id ? "active" : ""}"
+        data-category="${esc(c.id)}"
+        style="margin:.25rem"
+      >
+        ${c.icon} ${esc(c.name)}
+      </button>
+    `)
+    .join("");
 
-  if (!container) return;
-
-
-  /*
-   * معرفة الأقسام الموجودة فعليًا
-   */
-
-  const usedCategories =
-    new Set(
-      products.map(
-        product =>
-          product.category || "أخرى"
-      )
-    );
-
-
-  const buttons = [];
-
-
-  buttons.push(`
-    <button
-      type="button"
-      class="${selectedCategory === "all" ? "on" : ""}"
-      data-category="all"
-    >
-      🛍️ الكل
-    </button>
-  `);
-
-
-  Object.entries(CATEGORIES)
-    .forEach(
-      ([key, label]) => {
-
-        if (
-          !usedCategories.has(key)
-        ) {
-          return;
-        }
-
-
-        buttons.push(`
-          <button
-            type="button"
-            class="${selectedCategory === key ? "on" : ""}"
-            data-category="${esc(key)}"
-          >
-            ${esc(label)}
-          </button>
-        `);
-
-      }
-    );
-
-
-  container.innerHTML =
-    buttons.join("");
-
-
-  /*
-   * الضغط على القسم
-   */
-
-  container.onclick = event => {
-
-    const button =
-      event.target.closest(
-        "[data-category]"
-      );
-
-
-    if (!button) return;
-
-
-    selectedCategory =
-      button.dataset.category;
-
-
-    renderCategories();
-
-    renderList();
-
-  };
-
+  box.querySelectorAll("[data-category]").forEach(button => {
+    button.addEventListener("click", () => {
+      selectedCategory = button.dataset.category || "all";
+      renderCategories();
+      renderProducts();
+    });
+  });
 }
 
+/* =========================
+   المنتجات
+========================= */
 
-/* =====================================================
-   عرض المنتجات
-===================================================== */
+function renderProducts() {
+  const list = $("list");
+  const empty = $("empty");
 
-function renderList() {
+  if (!list) return;
 
-  const searchInput =
-    $("#q");
+  const search = String($("q")?.value || "")
+    .trim()
+    .toLowerCase();
 
+  const filtered = products.filter(p => {
+    if (!p.active) return false;
 
-  const query =
-    searchInput
-      ? normalizeText(
-          searchInput.value
-        )
-      : "";
-
-
-  const items =
-    products.filter(product => {
-
-      const name =
-        normalizeText(
-          product.name
-        );
-
-
-      const category =
-        product.category ||
-        "أخرى";
-
-
-      const matchesSearch =
-        !query ||
-        name.includes(query);
-
-
-      const matchesCategory =
-        selectedCategory === "all" ||
-        category === selectedCategory;
-
-
-      return (
-        matchesSearch &&
-        matchesCategory
-      );
-
-    });
-
-
-  if ($("#empty")) {
-
-    $("#empty").classList.toggle(
-      "hidden",
-      items.length > 0
-    );
-
-  }
-
-
-  if (!items.length) {
-
-    if ($("#list")) {
-
-      $("#list").innerHTML = "";
-
+    if (selectedCategory !== "all" &&
+        p.category !== selectedCategory) {
+      return false;
     }
 
-    return;
+    if (search) {
+      const text = `${p.name} ${p.category}`.toLowerCase();
 
+      if (!text.includes(search)) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  list.innerHTML = "";
+
+  if (!filtered.length) {
+    if (empty) empty.classList.remove("hidden");
+    return;
   }
 
+  if (empty) empty.classList.add("hidden");
 
-  $("#list").innerHTML =
-    items.map(product => {
+  filtered.forEach(product => {
+    const category = getCategoryInfo(product.category);
+    const inCart = Number(cart[product.id] || 0);
+    const stock = Number(product.stock || 0);
 
-      const stock =
-        Math.max(
-          0,
-          Number(product.stock) || 0
-        );
+    const card = document.createElement("article");
+    card.className = "card";
 
+    const imageHtml = product.image
+      ? `
+        <img
+          src="${esc(product.image)}"
+          alt="${esc(product.name)}"
+          loading="lazy"
+          style="
+            width:100%;
+            height:180px;
+            object-fit:contain;
+            border-radius:12px;
+            background:#f7f7f7;
+          "
+          onerror="this.style.display='none'"
+        >
+      `
+      : `
+        <div style="
+          height:180px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#f7f7f7;
+          border-radius:12px;
+          font-size:4rem;
+        ">
+          🛒
+        </div>
+      `;
 
-      const price =
-        Math.max(
-          0,
-          Number(product.price) || 0
-        );
+    card.innerHTML = `
+      ${imageHtml}
 
+      <div style="margin-top:.7rem">
+        <small style="opacity:.7">
+          ${category.icon} ${esc(category.name)}
+        </small>
 
-      const out =
-        stock <= 0;
+        <h3 style="margin:.35rem 0">
+          ${esc(product.name || "منتج")}
+        </h3>
 
+        <strong>
+          ${formatPrice(product.price)} جنيه
+        </strong>
 
-      const image =
-        safeImageUrl(
-          product.image
-        );
+        <div style="margin-top:.35rem;font-size:.9rem;opacity:.7">
+          المتاح: ${formatPrice(stock)}
+        </div>
+      </div>
 
+      <div
+        class="row"
+        style="margin-top:.8rem;gap:.5rem;align-items:center"
+      >
+        <button
+          type="button"
+          class="ghost minus"
+          ${inCart <= 0 ? "disabled" : ""}
+        >−</button>
 
-      const category =
-        product.category ||
-        "أخرى";
+        <strong class="qty">${inCart}</strong>
 
+        <button
+          type="button"
+          class="sun plus"
+          ${stock <= inCart ? "disabled" : ""}
+        >+</button>
+      </div>
+    `;
 
-      const categoryName =
-        CATEGORIES[category] ||
-        category;
+    const minus = card.querySelector(".minus");
+    const plus = card.querySelector(".plus");
+    const qty = card.querySelector(".qty");
 
+    minus?.addEventListener("click", () => {
+      const current = Number(cart[product.id] || 0);
 
-      return `
-        <div class="card">
+      if (current <= 1) {
+        delete cart[product.id];
+      } else {
+        cart[product.id] = current - 1;
+      }
 
-          ${
-            image
-              ? `
-                <img
-                  src="${esc(image)}"
-                  alt="${esc(
-                    product.name ||
-                    "منتج"
-                  )}"
-                  loading="lazy"
-                  onerror="
-                    this.style.display='none'
-                  "
-                >
-              `
-              : `
-                <div class="product-placeholder">
-                  لا توجد صورة
-                </div>
-              `
-          }
+      saveCart();
+      updateCart();
+      renderProducts();
+    });
 
+    plus?.addEventListener("click", () => {
+      const current = Number(cart[product.id] || 0);
 
-          <small>
-            ${esc(categoryName)}
-          </small>
+      if (current >= stock) return;
 
+      cart[product.id] = current + 1;
 
-          <div class="product-name">
-            ${esc(
-              product.name ||
-              "منتج بدون اسم"
-            )}
-          </div>
+      saveCart();
+      updateCart();
+      renderProducts();
+    });
 
+    list.appendChild(card);
+  });
+}
 
-          <div class="price">
-            ${fmt(price)}
-          </div>
+/* =========================
+   السلة
+========================= */
 
+function getCartItems() {
+  return Object.entries(cart)
+    .map(([id, qty]) => {
+      const product = products.find(p => p.id === id);
 
-          ${
-            stock > 0
-              ? `
-                <small
+      if (!product) return null;
+
+      const quantity = Math.min(
+        Math.max(0, Number(qty || 0)),
+        Number(product.stock || 0)
+      );
+
+      if (!quantity) return null;
+
+      return {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        qty: quantity,
+        total: product.price * quantity
+      };
+    })
+    .filter(Boolean);
+}
+
+function updateCart() {
+  const items = getCartItems();
+
+  let total = 0;
+  let count = 0;
+
+  items.forEach(item => {
+    total += item.total;
+    count += item.qty;
+  });
+
+  const cartBox = $("cart");
+  const sum = $("sum");
+
+  if (cartBox) {
+    cartBox.classList.toggle("hidden", count === 0);
+  }
+
+  if (sum) {
+    sum.textContent =
+      `${count} منتج — ${formatPrice(total)} جنيه`;
+  }
+
+  const lines = $("lines");
+
+  if (lines) {
+    lines.innerHTML = items.map(item => `
+      <div
+        class="row"
+        style="
+          justify-content:space-between;
+          gap:.5rem;
+          margin-bottom:.6rem;
+          padding:.6rem;
+          border-bottom:1px solid #eee;
+        "
+      >
+        <span>
+          ${esc(item.name)}
+          × ${item.qty}
+        </span>
+
+        <strong>
+          ${formatPrice(item.total)} ج
+        </strong>
+      </div>
+    `).join("");
+  }
+}
+
+/* =========================
+   GPS
+========================= */
+
+function makeMapUrl(lat, lng) {
+  return `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
+}
+
+function setLocationStatus(message, isError = false) {
+  const status = $("locationStatus");
+
+  if (!status) return;
+
+  status.textContent = message;
+  status.classList.remove("hidden");
+
+  if (isError) {
+    status.style.color = "#b00020";
+  } else {
+    status.style.color = "";
+  }
+}
+
+function setCustomerLocation() {
+  if (!navigator.geolocation) {
+    setLocationStatus(
+      "المتصفح لا يدعم تحديد الموقع.",
+      true
+    );
+    return;
+  }
+
+  setLocationStatus("جاري تحديد موقعك...");
+
+  const button = $("getLocation");
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "⏳ جاري تحديد الموقع...";
+  }
+
+  navigator.geolocation.getCurrentPosition
