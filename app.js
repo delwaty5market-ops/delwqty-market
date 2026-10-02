@@ -11,6 +11,7 @@ import {
   serverTimestamp
 } from "./config.js";
 
+
 /* =========================
    الأقسام
 ========================= */
@@ -30,85 +31,126 @@ const CATEGORIES = [
   { id: "أخرى", name: "أخرى", icon: "📦" }
 ];
 
+
 let products = [];
-let cart = JSON.parse(localStorage.getItem("cart") || "{}");
+
+let cart =
+  JSON.parse(
+    localStorage.getItem("cart") || "{}"
+  );
 
 let selectedCategory = "all";
 
 let storeWhatsapp = "";
+
 let storeLocation = "";
 
 let customerLocation = null;
 
 
 /* =========================
-   أدوات عامة
+   أدوات
 ========================= */
 
-const $ = id => document.getElementById(id);
+const $ = id =>
+  document.getElementById(id);
+
 
 function saveCart() {
-  localStorage.setItem("cart", JSON.stringify(cart));
+
+  localStorage.setItem(
+    "cart",
+    JSON.stringify(cart)
+  );
+
 }
 
-function formatPrice(value) {
-  const n = Number(value);
 
-  if (!Number.isFinite(n)) {
+function formatPrice(value) {
+
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
     return "0";
   }
 
-  return n.toLocaleString("ar-EG");
+  return number.toLocaleString("ar-EG");
 }
 
+
 function getCategory(product) {
-  const category = String(
-    product?.category || ""
-  ).trim();
+
+  const category =
+    String(
+      product?.category || ""
+    ).trim();
+
 
   if (
     category &&
-    CATEGORIES.some(c => c.id === category)
+    CATEGORIES.some(
+      item => item.id === category
+    )
   ) {
     return category;
   }
 
+
   return "أخرى";
 }
 
+
 function getCategoryInfo(category) {
+
   return (
-    CATEGORIES.find(c => c.id === category) ||
-    CATEGORIES[CATEGORIES.length - 1]
+    CATEGORIES.find(
+      item => item.id === category
+    ) ||
+    CATEGORIES[
+      CATEGORIES.length - 1
+    ]
   );
 }
 
+
 function normalizeProduct(id, data) {
+
   const p = data || {};
 
+
   return {
+
     id,
 
-    name: String(
-      p.name ?? ""
-    ).trim(),
+    name:
+      String(
+        p.name ?? ""
+      ).trim(),
 
-    price: Number(
-      p.price ?? 0
-    ),
+    price:
+      Number(
+        p.price ?? 0
+      ),
 
-    stock: Math.max(
-      0,
-      Number(p.stock ?? 0)
-    ),
+    stock:
+      Math.max(
+        0,
+        Number(
+          p.stock ?? 0
+        )
+      ),
 
-    image: String(
-      p.image ?? ""
-    ).trim(),
+    image:
+      String(
+        p.image ?? ""
+      ).trim(),
 
-    active: p.active !== false,
+    active:
+      p.active !== false,
 
-    category: getCategory(p)
+    category:
+      getCategory(p)
+
   };
 }
 
@@ -118,40 +160,65 @@ function normalizeProduct(id, data) {
 ========================= */
 
 function renderCategories() {
-  const box = $("categories");
+
+  const box =
+    $("categories");
 
   if (!box) return;
 
-  const available = new Set(
-    products.map(p => p.category)
-  );
 
-  box.innerHTML = CATEGORIES
-    .filter(category => {
-      return (
-        category.id === "all" ||
-        available.has(category.id)
-      );
-    })
-    .map(category => `
-      <button
-        type="button"
-        class="ghost category-btn ${
-          selectedCategory === category.id
-            ? "active"
-            : ""
-        }"
-        data-category="${esc(category.id)}"
-        style="margin:.25rem"
-      >
-        ${category.icon}
-        ${esc(category.name)}
-      </button>
-    `)
-    .join("");
+  const available =
+    new Set(
+      products.map(
+        product =>
+          product.category
+      )
+    );
+
+
+  box.innerHTML =
+    CATEGORIES
+      .filter(category => {
+
+        return (
+          category.id === "all" ||
+          available.has(
+            category.id
+          )
+        );
+
+      })
+      .map(category => {
+
+        const active =
+          selectedCategory ===
+          category.id;
+
+
+        return `
+          <button
+            type="button"
+            class="category-btn ${
+              active ? "active" : ""
+            }"
+            data-category="${esc(category.id)}"
+          >
+            <span>
+              ${category.icon}
+            </span>
+
+            ${esc(category.name)}
+          </button>
+        `;
+
+      })
+      .join("");
+
 
   box
-    .querySelectorAll("[data-category]")
+    .querySelectorAll(
+      "[data-category]"
+    )
     .forEach(button => {
 
       button.addEventListener(
@@ -159,274 +226,412 @@ function renderCategories() {
         () => {
 
           selectedCategory =
-            button.dataset.category || "all";
+            button.dataset.category ||
+            "all";
 
           renderCategories();
+
           renderProducts();
+
         }
       );
 
     });
+
 }
 
 
 /* =========================
-   عرض المنتجات
+   المنتجات
 ========================= */
 
 function renderProducts() {
-  const list = $("list");
-  const empty = $("empty");
+
+  const list =
+    $("list");
+
+  const empty =
+    $("empty");
 
   if (!list) return;
 
-  const search = String(
-    $("q")?.value || ""
-  )
-    .trim()
-    .toLowerCase();
 
-  const filtered = products.filter(product => {
+  const search =
+    String(
+      $("q")?.value || ""
+    )
+      .trim()
+      .toLowerCase();
 
-    /*
-      المنتج يظهر للعميل طالما active
-      ليس false.
-    */
 
-    if (!product.active) {
-      return false;
-    }
+  const filtered =
+    products.filter(product => {
 
-    if (
-      selectedCategory !== "all" &&
-      product.category !== selectedCategory
-    ) {
-      return false;
-    }
-
-    if (search) {
-
-      const text =
-        `${product.name} ${product.category}`
-          .toLowerCase();
-
-      if (!text.includes(search)) {
+      if (!product.active) {
         return false;
       }
-    }
 
-    return true;
-  });
+
+      if (
+        selectedCategory !== "all" &&
+        product.category !==
+          selectedCategory
+      ) {
+        return false;
+      }
+
+
+      if (search) {
+
+        const text =
+          `${product.name} ${product.category}`
+            .toLowerCase();
+
+
+        if (
+          !text.includes(search)
+        ) {
+          return false;
+        }
+
+      }
+
+
+      return true;
+
+    });
+
 
   list.innerHTML = "";
+
+
+  const count =
+    $("productsCount");
+
+
+  if (count) {
+
+    count.textContent =
+      `${filtered.length} منتج`;
+
+  }
+
 
   if (!filtered.length) {
 
     if (empty) {
-      empty.textContent =
-        "لا توجد منتجات مطابقة.";
 
-      empty.classList.remove("hidden");
+      empty.textContent =
+        search
+          ? "لا توجد منتجات بهذا الاسم."
+          : "لا توجد منتجات في هذا القسم حاليًا.";
+
+      empty.classList.remove(
+        "hidden"
+      );
+
     }
 
     return;
   }
 
+
   if (empty) {
-    empty.classList.add("hidden");
+
+    empty.classList.add(
+      "hidden"
+    );
+
   }
+
 
   filtered.forEach(product => {
 
     const category =
-      getCategoryInfo(product.category);
+      getCategoryInfo(
+        product.category
+      );
+
 
     const inCart =
-      Number(cart[product.id] || 0);
+      Number(
+        cart[product.id] || 0
+      );
+
 
     const stock =
-      Number(product.stock || 0);
+      Number(
+        product.stock || 0
+      );
+
 
     const card =
-      document.createElement("article");
+      document.createElement(
+        "article"
+      );
 
-    card.className = "card";
 
-
-    /* =========================
-       صورة المنتج
-    ========================= */
-
-    const imageHtml = product.image
-      ? `
-        <img
-          src="${esc(product.image)}"
-          alt="${esc(product.name)}"
-          loading="lazy"
-          style="
-            width:100%;
-            height:180px;
-            object-fit:contain;
-            border-radius:12px;
-            background:#f7f7f7;
-          "
-          onerror="this.style.display='none'"
-        >
-      `
-      : `
-        <div style="
-          height:180px;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          background:#f7f7f7;
-          border-radius:12px;
-          font-size:4rem;
-        ">
-          🛒
-        </div>
-      `;
+    card.className =
+      "product-card";
 
 
     /* =========================
-       كارت المنتج
-
-       ملاحظة:
-       لا يتم عرض المخزون للعميل.
+       صورة
     ========================= */
+
+    const imageHtml =
+      product.image
+
+        ? `
+          <img
+            src="${esc(product.image)}"
+            alt="${esc(product.name)}"
+            loading="lazy"
+            onerror="
+              this.parentElement.innerHTML =
+              '<div class=&quot;product-placeholder&quot;>🛒</div>'
+            "
+          >
+        `
+
+        : `
+          <div
+            class="product-placeholder"
+          >
+            🛒
+          </div>
+        `;
+
 
     card.innerHTML = `
-      ${imageHtml}
 
-      <div style="margin-top:.7rem">
+      <div class="product-image">
+        ${imageHtml}
+      </div>
 
-        <small style="opacity:.7">
+
+      <div class="product-body">
+
+        <div class="product-category">
           ${category.icon}
           ${esc(category.name)}
-        </small>
+        </div>
 
-        <h3 style="margin:.35rem 0">
+
+        <h3 class="product-name">
           ${esc(
-            product.name || "منتج"
+            product.name ||
+            "منتج"
           )}
         </h3>
 
-        <strong>
-          ${formatPrice(product.price)}
-          جنيه
-        </strong>
 
-      </div>
+        <div class="product-price">
 
-      <div
-        class="row"
-        style="
-          margin-top:.8rem;
-          gap:.5rem;
-          align-items:center;
-        "
-      >
+          ${formatPrice(
+            product.price
+          )}
 
-        <button
-          type="button"
-          class="ghost minus"
-          ${
-            inCart <= 0
-              ? "disabled"
-              : ""
-          }
-        >
-          −
-        </button>
+          <small>
+            جنيه
+          </small>
 
-        <strong class="qty">
-          ${inCart}
-        </strong>
+        </div>
 
-        <button
-          type="button"
-          class="sun plus"
-          ${
-            stock <= inCart
-              ? "disabled"
-              : ""
-          }
-        >
-          +
-        </button>
+
+        <div class="product-actions">
+
+          <button
+            type="button"
+            class="qty-btn minus"
+            ${
+              inCart <= 0
+                ? "disabled"
+                : ""
+            }
+            aria-label="تقليل الكمية"
+          >
+            −
+          </button>
+
+
+          <strong class="qty-number">
+            ${inCart}
+          </strong>
+
+
+          <button
+            type="button"
+            class="qty-btn plus"
+            ${
+              stock <= inCart
+                ? "disabled"
+                : ""
+            }
+            aria-label="زيادة الكمية"
+          >
+            +
+          </button>
+
+
+          <button
+            type="button"
+            class="add-btn"
+            ${
+              stock <= inCart
+                ? "disabled"
+                : ""
+            }
+          >
+            ${
+              inCart > 0
+                ? "إضافة"
+                : "أضف للسلة"
+            }
+          </button>
+
+        </div>
 
       </div>
     `;
 
 
-    const minus =
-      card.querySelector(".minus");
-
-    const plus =
-      card.querySelector(".plus");
-
-
     /* =========================
-       تقليل الكمية
+       تقليل
     ========================= */
+
+    const minus =
+      card.querySelector(
+        ".minus"
+      );
+
 
     minus?.addEventListener(
       "click",
       () => {
 
         const current =
-          Number(cart[product.id] || 0);
+          Number(
+            cart[product.id] || 0
+          );
+
 
         if (current <= 1) {
 
-          delete cart[product.id];
+          delete cart[
+            product.id
+          ];
 
         } else {
 
-          cart[product.id] =
+          cart[
+            product.id
+          ] =
             current - 1;
+
         }
 
+
         saveCart();
+
         updateCart();
+
         renderProducts();
+
       }
     );
 
 
     /* =========================
-       زيادة الكمية
+       زيادة
     ========================= */
+
+    const plus =
+      card.querySelector(
+        ".plus"
+      );
+
 
     plus?.addEventListener(
       "click",
       () => {
 
         const current =
-          Number(cart[product.id] || 0);
+          Number(
+            cart[product.id] || 0
+          );
 
-        /*
-          المخزون يُستخدم داخليًا فقط
-          لمنع العميل من طلب كمية أكبر
-          من الموجود.
-        */
 
-        if (current >= stock) {
+        if (
+          current >= stock
+        ) {
           return;
         }
 
-        cart[product.id] =
+
+        cart[
+          product.id
+        ] =
           current + 1;
 
+
         saveCart();
+
         updateCart();
+
         renderProducts();
+
+      }
+    );
+
+
+    /* =========================
+       أضف للسلة
+    ========================= */
+
+    const add =
+      card.querySelector(
+        ".add-btn"
+      );
+
+
+    add?.addEventListener(
+      "click",
+      () => {
+
+        const current =
+          Number(
+            cart[product.id] || 0
+          );
+
+
+        if (
+          current >= stock
+        ) {
+          return;
+        }
+
+
+        cart[
+          product.id
+        ] =
+          current + 1;
+
+
+        saveCart();
+
+        updateCart();
+
+        renderProducts();
+
       }
     );
 
 
     list.appendChild(card);
+
   });
+
 }
 
 
@@ -445,9 +650,11 @@ function getCartItems() {
           p => p.id === id
         );
 
+
       if (!product) {
         return null;
       }
+
 
       const quantity =
         Math.min(
@@ -455,24 +662,41 @@ function getCartItems() {
             0,
             Number(qty || 0)
           ),
-          Number(product.stock || 0)
+          Number(
+            product.stock || 0
+          )
         );
+
 
       if (!quantity) {
         return null;
       }
 
+
       return {
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        qty: quantity,
+
+        id:
+          product.id,
+
+        name:
+          product.name,
+
+        price:
+          product.price,
+
+        qty:
+          quantity,
+
         total:
-          product.price * quantity
+          product.price *
+          quantity
+
       };
+
     })
 
     .filter(Boolean);
+
 }
 
 
@@ -485,19 +709,26 @@ function updateCart() {
   const items =
     getCartItems();
 
+
   let total = 0;
+
   let count = 0;
+
 
   items.forEach(item => {
 
-    total += item.total;
-    count += item.qty;
+    total +=
+      item.total;
+
+    count +=
+      item.qty;
 
   });
 
 
   const cartBox =
     $("cart");
+
 
   const sum =
     $("sum");
@@ -509,6 +740,7 @@ function updateCart() {
       "hidden",
       count === 0
     );
+
   }
 
 
@@ -516,11 +748,13 @@ function updateCart() {
 
     sum.textContent =
       `${count} منتج — ${formatPrice(total)} جنيه`;
+
   }
 
 
   const lines =
     $("lines");
+
 
   if (!lines) return;
 
@@ -528,21 +762,39 @@ function updateCart() {
   lines.innerHTML =
     items
       .map(item => `
+
         <div
-          class="row"
+          class="cart-line"
           style="
+            display:flex;
             justify-content:space-between;
-            gap:.5rem;
-            margin-bottom:.6rem;
-            padding:.6rem;
-            border-bottom:1px solid #eee;
+            align-items:center;
+            gap:10px;
+            padding:10px 0;
+            border-bottom:1px solid #e8ebf0;
           "
         >
 
-          <span>
-            ${esc(item.name)}
-            × ${item.qty}
-          </span>
+          <div>
+
+            <strong>
+              ${esc(item.name)}
+            </strong>
+
+            <small
+              style="
+                display:block;
+                color:#7b8495;
+                margin-top:3px;
+              "
+            >
+              ${item.qty} ×
+              ${formatPrice(item.price)}
+              جنيه
+            </small>
+
+          </div>
+
 
           <strong>
             ${formatPrice(item.total)}
@@ -550,16 +802,21 @@ function updateCart() {
           </strong>
 
         </div>
+
       `)
       .join("");
+
 }
 
 
 /* =========================
-   Google Maps / GPS
+   Google Maps
 ========================= */
 
-function makeMapUrl(lat, lng) {
+function makeMapUrl(
+  lat,
+  lng
+) {
 
   return (
     "https://www.google.com/maps?q=" +
@@ -567,7 +824,9 @@ function makeMapUrl(lat, lng) {
       `${lat},${lng}`
     )
   );
+
 }
+
 
 function setLocationStatus(
   message,
@@ -577,19 +836,24 @@ function setLocationStatus(
   const status =
     $("locationStatus");
 
+
   if (!status) return;
+
 
   status.textContent =
     message;
+
 
   status.classList.remove(
     "hidden"
   );
 
+
   status.style.color =
     isError
       ? "#b00020"
       : "";
+
 }
 
 
@@ -617,10 +881,12 @@ function setCustomerLocation() {
 
   if (button) {
 
-    button.disabled = true;
+    button.disabled =
+      true;
 
     button.textContent =
       "⏳ جاري تحديد الموقع...";
+
   }
 
 
@@ -633,10 +899,12 @@ function setCustomerLocation() {
           position.coords.latitude
         );
 
+
       const lng =
         Number(
           position.coords.longitude
         );
+
 
       const accuracy =
         Number(
@@ -654,12 +922,15 @@ function setCustomerLocation() {
           true
         );
 
+
         if (button) {
 
-          button.disabled = false;
+          button.disabled =
+            false;
 
           button.textContent =
             "📍 تحديد موقعي على الخريطة";
+
         }
 
         return;
@@ -667,14 +938,20 @@ function setCustomerLocation() {
 
 
       const mapUrl =
-        makeMapUrl(lat, lng);
+        makeMapUrl(
+          lat,
+          lng
+        );
 
 
       customerLocation = {
 
         lat,
+
         lng,
+
         accuracy,
+
         mapUrl
 
       };
@@ -697,18 +974,22 @@ function setCustomerLocation() {
         map.classList.remove(
           "hidden"
         );
+
       }
 
 
       if (button) {
 
-        button.disabled = false;
+        button.disabled =
+          false;
 
         button.textContent =
           "📍 تحديث موقعي";
+
       }
 
     },
+
 
     error => {
 
@@ -716,20 +997,27 @@ function setCustomerLocation() {
         "تعذر تحديد موقعك.";
 
 
-      if (error.code === 1) {
+      if (
+        error.code === 1
+      ) {
 
         message =
           "تم رفض إذن الموقع. اسمح للموقع من إعدادات المتصفح ثم حاول مرة أخرى.";
 
-      } else if (error.code === 2) {
+      } else if (
+        error.code === 2
+      ) {
 
         message =
           "تعذر الحصول على الموقع حاليًا. تأكد من تشغيل GPS.";
 
-      } else if (error.code === 3) {
+      } else if (
+        error.code === 3
+      ) {
 
         message =
           "انتهت مهلة تحديد الموقع. حاول مرة أخرى.";
+
       }
 
 
@@ -741,20 +1029,25 @@ function setCustomerLocation() {
 
       if (button) {
 
-        button.disabled = false;
+        button.disabled =
+          false;
 
         button.textContent =
           "📍 تحديد موقعي على الخريطة";
+
       }
 
     },
+
 
     {
       enableHighAccuracy: true,
       timeout: 15000,
       maximumAge: 0
     }
+
   );
+
 }
 
 
@@ -773,11 +1066,14 @@ async function loadStoreSettings() {
         "store"
       );
 
+
     const snapshot =
       await getDoc(ref);
 
 
-    if (!snapshot.exists()) {
+    if (
+      !snapshot.exists()
+    ) {
       return;
     }
 
@@ -790,14 +1086,16 @@ async function loadStoreSettings() {
       String(
         data.whatsapp || ""
       )
-      .replace(/\D/g, "");
+        .replace(
+          /\D/g,
+          ""
+        );
 
 
     storeLocation =
       String(
         data.location || ""
-      )
-      .trim();
+      ).trim();
 
   } catch (error) {
 
@@ -805,7 +1103,9 @@ async function loadStoreSettings() {
       "Error loading store settings:",
       error
     );
+
   }
+
 }
 
 
@@ -814,26 +1114,38 @@ function getInternationalWhatsapp(
 ) {
 
   let value =
-    String(number || "")
-      .replace(/\D/g, "");
+    String(
+      number || ""
+    )
+      .replace(
+        /\D/g,
+        ""
+      );
 
 
-  if (value.startsWith("00")) {
+  if (
+    value.startsWith("00")
+  ) {
 
     value =
       value.slice(2);
+
   }
 
 
-  if (value.startsWith("0")) {
+  if (
+    value.startsWith("0")
+  ) {
 
     value =
       "20" +
       value.slice(1);
+
   }
 
 
   return value;
+
 }
 
 
@@ -842,7 +1154,11 @@ function updateWhatsappButton() {
   const wa =
     $("wa");
 
-  if (!wa || !storeWhatsapp) {
+
+  if (
+    !wa ||
+    !storeWhatsapp
+  ) {
     return;
   }
 
@@ -861,27 +1177,35 @@ function updateWhatsappButton() {
   wa.href =
     `https://wa.me/${number}`;
 
+
   wa.classList.remove(
     "hidden"
   );
+
 }
 
 
 /* =========================
-   التحقق من الهاتف
+   الهاتف
 ========================= */
 
-function validatePhone(phone) {
+function validatePhone(
+  phone
+) {
 
   const clean =
-    String(phone || "")
+    String(
+      phone || ""
+    )
       .replace(
         /[\s\-()]/g,
         ""
       );
 
+
   return /^[+]?\d{8,20}$/
     .test(clean);
+
 }
 
 
@@ -893,19 +1217,22 @@ async function sendOrder() {
 
   const name =
     String(
-      $("name")?.value || ""
+      $("name")?.value ||
+      ""
     ).trim();
 
 
   const phone =
     String(
-      $("phone")?.value || ""
+      $("phone")?.value ||
+      ""
     ).trim();
 
 
   const address =
     String(
-      $("addr")?.value || ""
+      $("addr")?.value ||
+      ""
     ).trim();
 
 
@@ -913,19 +1240,25 @@ async function sendOrder() {
     $("status");
 
 
-  function showError(message) {
+  function showError(
+    message
+  ) {
 
     if (!status) return;
 
+
     status.textContent =
       message;
+
 
     status.classList.remove(
       "hidden"
     );
 
+
     status.style.color =
       "#b00020";
+
   }
 
 
@@ -939,7 +1272,9 @@ async function sendOrder() {
   }
 
 
-  if (!validatePhone(phone)) {
+  if (
+    !validatePhone(phone)
+  ) {
 
     showError(
       "من فضلك اكتب رقم موبايل صحيح."
@@ -1002,6 +1337,7 @@ async function sendOrder() {
 
     sendButton.textContent =
       "⏳ جاري إرسال الطلب...";
+
   }
 
 
@@ -1019,7 +1355,8 @@ async function sendOrder() {
 
       total,
 
-      status: "new",
+      status:
+        "new",
 
       createdAt:
         serverTimestamp(),
@@ -1090,6 +1427,7 @@ async function sendOrder() {
       throw new Error(
         "رقم واتساب المحل غير مضبوط في إعدادات المتجر."
       );
+
     }
 
 
@@ -1100,8 +1438,10 @@ async function sendOrder() {
     message +=
       `👤 الاسم: ${name}\n`;
 
+
     message +=
       `📱 الهاتف: ${phone}\n`;
+
 
     message +=
       `📍 العنوان: ${address}\n\n`;
@@ -1134,6 +1474,7 @@ async function sendOrder() {
       message +=
         "\n🏪 *موقع المحل:*\n" +
         `${storeLocation}\n`;
+
     }
 
 
@@ -1163,18 +1504,20 @@ async function sendOrder() {
       status.textContent =
         "تم تسجيل الطلب بنجاح ✅ سيتم فتح واتساب لإرسال التفاصيل.";
 
+
       status.classList.remove(
         "hidden"
       );
 
+
       status.style.color =
         "#16803c";
+
     }
 
 
     window.location.href =
       whatsappUrl;
-
 
   } catch (error) {
 
@@ -1196,13 +1539,16 @@ async function sendOrder() {
 
       sendButton.textContent =
         "تأكيد الطلب";
+
     }
+
   }
+
 }
 
 
 /* =========================
-   متابعة المنتجات
+   المنتجات من Firebase
 ========================= */
 
 function listenProducts() {
@@ -1225,14 +1571,12 @@ function listenProducts() {
 
       products =
         snapshot.docs
-
           .map(item =>
             normalizeProduct(
               item.id,
               item.data()
             )
           )
-
           .filter(product => {
 
             return (
@@ -1246,11 +1590,6 @@ function listenProducts() {
           });
 
 
-      /*
-        تنظيف السلة من المنتجات
-        المحذوفة أو الكميات الزائدة.
-      */
-
       const validIds =
         new Set(
           products.map(
@@ -1262,11 +1601,14 @@ function listenProducts() {
       Object.keys(cart)
         .forEach(id => {
 
-          if (!validIds.has(id)) {
+          if (
+            !validIds.has(id)
+          ) {
 
             delete cart[id];
 
             return;
+
           }
 
 
@@ -1290,11 +1632,13 @@ function listenProducts() {
             delete cart[id];
 
           } else if (
-            qty > product.stock
+            qty >
+            product.stock
           ) {
 
             cart[id] =
               product.stock;
+
           }
 
         });
@@ -1331,9 +1675,13 @@ function listenProducts() {
         empty.classList.remove(
           "hidden"
         );
+
       }
+
     }
+
   );
+
 }
 
 
@@ -1346,170 +1694,61 @@ function setupSearch() {
   const search =
     $("q");
 
+
   if (!search) {
     return;
   }
 
 
+  const clear =
+    $("clearSearch");
+
+
   search.addEventListener(
     "input",
-    renderProducts
+    () => {
+
+      renderProducts();
+
+
+      if (clear) {
+
+        clear.classList.toggle(
+          "hidden",
+          !search.value
+        );
+
+      }
+
+    }
   );
+
+
+  clear?.addEventListener(
+    "click",
+    () => {
+
+      search.value = "";
+
+      clear.classList.add(
+        "hidden"
+      );
+
+      renderProducts();
+
+      search.focus();
+
+    }
+  );
+
 }
 
 
 /* =========================
-   تجهيز الواجهة
+   الواجهة
 ========================= */
 
-function setupExtraUI() {
-
-  const main =
-    document.querySelector(
-      "main"
-    );
-
-
-  if (!main) {
-    return;
-  }
-
-
-  /*
-    لو الأقسام غير موجودة
-    في index.html
-  */
-
-  if (!$("categories")) {
-
-    const categories =
-      document.createElement(
-        "div"
-      );
-
-
-    categories.id =
-      "categories";
-
-
-    categories.style.marginTop =
-      "1rem";
-
-
-    const search =
-      $("q");
-
-
-    if (
-      search?.parentNode
-    ) {
-
-      search.parentNode.insertBefore(
-        categories,
-        search.nextSibling
-      );
-
-    } else {
-
-      main.prepend(
-        categories
-      );
-    }
-  }
-
-
-  /*
-    صندوق تحديد موقع العميل
-  */
-
-  if (!$("locationBox")) {
-
-    const cartDetail =
-      $("detail");
-
-
-    if (cartDetail) {
-
-      const box =
-        document.createElement(
-          "div"
-        );
-
-
-      box.id =
-        "locationBox";
-
-
-      box.className =
-        "card";
-
-
-      box.style.marginTop =
-        "1rem";
-
-
-      box.innerHTML = `
-
-        <strong>
-          📍 موقع التوصيل
-        </strong>
-
-        <p
-          id="locationStatus"
-          class="msg"
-          style="margin:.5rem 0"
-        >
-          لم يتم تحديد موقعك بعد.
-        </p>
-
-        <button
-          type="button"
-          class="ghost"
-          id="getLocation"
-          style="width:100%"
-        >
-          📍 تحديد موقعي على الخريطة
-        </button>
-
-        <a
-          id="customerMap"
-          href="#"
-          target="_blank"
-          rel="noopener"
-          class="hidden"
-          style="
-            display:block;
-            margin-top:.5rem
-          "
-        >
-          📍 فتح موقعي على Google Maps
-        </a>
-
-      `;
-
-
-      const status =
-        cartDetail.querySelector(
-          "#status"
-        );
-
-
-      if (status) {
-
-        cartDetail.insertBefore(
-          box,
-          status
-        );
-
-      } else {
-
-        cartDetail.appendChild(
-          box
-        );
-      }
-    }
-  }
-
+function setupUI() {
 
   $("getLocation")
     ?.addEventListener(
@@ -1538,38 +1777,38 @@ function setupExtraUI() {
 
       }
     );
+
 }
 
 
 /* =========================
-   تشغيل التطبيق
+   التشغيل
 ========================= */
 
 async function init() {
 
-  setupExtraUI();
-
   setupSearch();
 
+  setupUI();
 
   await loadStoreSettings();
 
-
   updateWhatsappButton();
-
 
   listenProducts();
 
-
   updateCart();
+
 }
 
 
-init().catch(error => {
+init().catch(
+  error => {
 
-  console.error(
-    "Application initialization error:",
-    error
-  );
+    console.error(
+      "Application initialization error:",
+      error
+    );
 
-});
+  }
+);
