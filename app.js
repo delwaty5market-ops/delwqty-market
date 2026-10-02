@@ -385,4 +385,522 @@ function setCustomerLocation() {
     button.textContent = "⏳ جاري تحديد الموقع...";
   }
 
-  navigator.geolocation.getCurrentPosition
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      const lat = Number(position.coords.latitude);
+      const lng = Number(position.coords.longitude);
+      const accuracy = Number(position.coords.accuracy || 0);
+
+      if (
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lng)
+      ) {
+        setLocationStatus(
+          "تعذر قراءة موقعك.",
+          true
+        );
+
+        if (button) {
+          button.disabled = false;
+          button.textContent = "📍 تحديد موقعي على الخريطة";
+        }
+
+        return;
+      }
+
+      const mapUrl = makeMapUrl(lat, lng);
+
+      customerLocation = {
+        lat,
+        lng,
+        accuracy,
+        mapUrl
+      };
+
+      setLocationStatus(
+        `تم تحديد موقعك بنجاح 📍`
+      );
+
+      const map = $("customerMap");
+
+      if (map) {
+        map.href = mapUrl;
+        map.classList.remove("hidden");
+      }
+
+      if (button) {
+        button.disabled = false;
+        button.textContent = "📍 تحديث موقعي";
+      }
+    },
+
+    error => {
+      let message = "تعذر تحديد موقعك.";
+
+      if (error.code === 1) {
+        message =
+          "تم رفض إذن الموقع. اسمح للموقع من إعدادات المتصفح ثم حاول مرة أخرى.";
+      } else if (error.code === 2) {
+        message =
+          "تعذر الحصول على الموقع حاليًا. تأكد من تشغيل GPS.";
+      } else if (error.code === 3) {
+        message =
+          "انتهت مهلة تحديد الموقع. حاول مرة أخرى.";
+      }
+
+      setLocationStatus(message, true);
+
+      if (button) {
+        button.disabled = false;
+        button.textContent = "📍 تحديد موقعي على الخريطة";
+      }
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    }
+  );
+}
+
+/* =========================
+   إعدادات المحل
+========================= */
+
+async function loadStoreSettings() {
+  try {
+    const ref = doc(db, "settings", "store");
+    const snapshot = await getDoc(ref);
+
+    if (!snapshot.exists()) return;
+
+    const data = snapshot.data() || {};
+
+    storeWhatsapp = String(
+      data.whatsapp || ""
+    ).replace(/\D/g, "");
+
+    storeLocation = String(
+      data.location || ""
+    ).trim();
+  } catch (error) {
+    console.error(
+      "Error loading store settings:",
+      error
+    );
+  }
+}
+
+function getInternationalWhatsapp(number) {
+  let value = String(number || "")
+    .replace(/\D/g, "");
+
+  if (value.startsWith("00")) {
+    value = value.slice(2);
+  }
+
+  if (value.startsWith("0")) {
+    value = "20" + value.slice(1);
+  }
+
+  return value;
+}
+
+function updateWhatsappButton() {
+  const wa = $("wa");
+
+  if (!wa || !storeWhatsapp) return;
+
+  const number = getInternationalWhatsapp(
+    storeWhatsapp
+  );
+
+  if (!number) return;
+
+  wa.href = `https://wa.me/${number}`;
+  wa.classList.remove("hidden");
+}
+
+/* =========================
+   إرسال الطلب
+========================= */
+
+function validatePhone(phone) {
+  const clean = String(phone || "")
+    .replace(/[\s\-()]/g, "");
+
+  return /^[+]?\d{8,20}$/.test(clean);
+}
+
+async function sendOrder() {
+  const name = String($("name")?.value || "").trim();
+  const phone = String($("phone")?.value || "").trim();
+  const address = String($("addr")?.value || "").trim();
+  const status = $("status");
+
+  const showError = message => {
+    if (!status) return;
+
+    status.textContent = message;
+    status.classList.remove("hidden");
+    status.style.color = "#b00020";
+  };
+
+  if (!name) {
+    showError("من فضلك اكتب الاسم.");
+    return;
+  }
+
+  if (!validatePhone(phone)) {
+    showError("من فضلك اكتب رقم موبايل صحيح.");
+    return;
+  }
+
+  if (!address) {
+    showError("من فضلك اكتب العنوان بالتفصيل.");
+    return;
+  }
+
+  if (!customerLocation) {
+    showError(
+      "من فضلك حدد موقعك على الخريطة أولًا."
+    );
+    return;
+  }
+
+  const items = getCartItems();
+
+  if (!items.length) {
+    showError("السلة فارغة.");
+    return;
+  }
+
+  const total = items.reduce(
+    (sum, item) => sum + item.total,
+    0
+  );
+
+  const sendButton = $("send");
+
+  if (sendButton) {
+    sendButton.disabled = true;
+    sendButton.textContent = "⏳ جاري إرسال الطلب...";
+  }
+
+  try {
+    const orderData = {
+      name,
+      phone,
+      address,
+      items,
+      total,
+      status: "new",
+      createdAt: serverTimestamp(),
+
+      customerLocation: {
+        lat: customerLocation.lat,
+        lng: customerLocation.lng,
+        accuracy: customerLocation.accuracy,
+        mapUrl: customerLocation.mapUrl
+      },
+
+      lat: customerLocation.lat,
+      lng: customerLocation.lng,
+      mapUrl: customerLocation.mapUrl,
+
+      store: {
+        whatsapp: storeWhatsapp,
+        location: storeLocation
+      },
+
+      storeWhatsapp,
+      storeLocation
+    };
+
+    await addDoc(
+      collection(db, "orders"),
+      orderData
+    );
+
+    const waNumber =
+      getInternationalWhatsapp(storeWhatsapp);
+
+    if (!waNumber) {
+      throw new Error(
+        "رقم واتساب المحل غير مضبوط في إعدادات المتجر."
+      );
+    }
+
+    let message =
+      `🛒 *طلب جديد من دلوقتي ماركت*\n\n`;
+
+    message += `👤 الاسم: ${name}\n`;
+    message += `📱 الهاتف: ${phone}\n`;
+    message += `📍 العنوان: ${address}\n\n`;
+
+    message += `🧾 *المنتجات:*\n`;
+
+    items.forEach(item => {
+      message +=
+        `• ${item.name} × ${item.qty} = ` +
+        `${formatPrice(item.total)} ج\n`;
+    });
+
+    message +=
+      `\n💰 *الإجمالي: ${formatPrice(total)} جنيه*\n`;
+
+    message +=
+      `\n📍 *موقع العميل:*\n` +
+      `${customerLocation.mapUrl}\n`;
+
+    if (storeLocation) {
+      message +=
+        `\n🏪 *موقع المحل:*\n` +
+        `${storeLocation}\n`;
+    }
+
+    message +=
+      `\n📞 واتساب المحل: ${storeWhatsapp}`;
+
+    const whatsappUrl =
+      `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+
+    cart = {};
+    saveCart();
+    updateCart();
+    renderProducts();
+
+    if (status) {
+      status.textContent =
+        "تم تسجيل الطلب بنجاح ✅ سيتم فتح واتساب لإرسال التفاصيل.";
+      status.classList.remove("hidden");
+      status.style.color = "#16803c";
+    }
+
+    window.location.href = whatsappUrl;
+
+  } catch (error) {
+    console.error("Order error:", error);
+
+    showError(
+      "حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى."
+    );
+
+    if (sendButton) {
+      sendButton.disabled = false;
+      sendButton.textContent = "تأكيد الطلب";
+    }
+  }
+}
+
+/* =========================
+   مراقبة المنتجات
+========================= */
+
+function listenProducts() {
+  const productsQuery = query(
+    collection(db, "products"),
+    orderBy("name")
+  );
+
+  onSnapshot(
+    productsQuery,
+    snapshot => {
+      products = snapshot.docs
+        .map(item =>
+          normalizeProduct(
+            item.id,
+            item.data()
+          )
+        )
+        .filter(product =>
+          product.name &&
+          Number.isFinite(product.price) &&
+          product.price >= 0
+        );
+
+      /* تنظيف السلة من المنتجات المحذوفة
+         أو الكميات التي أصبحت أكبر من المخزون */
+      const validIds = new Set(
+        products.map(p => p.id)
+      );
+
+      Object.keys(cart).forEach(id => {
+        if (!validIds.has(id)) {
+          delete cart[id];
+          return;
+        }
+
+        const product = products.find(
+          p => p.id === id
+        );
+
+        const qty = Number(cart[id] || 0);
+
+        if (!product || product.stock <= 0) {
+          delete cart[id];
+        } else if (qty > product.stock) {
+          cart[id] = product.stock;
+        }
+      });
+
+      saveCart();
+
+      renderCategories();
+      renderProducts();
+      updateCart();
+    },
+
+    error => {
+      console.error(
+        "Products listener error:",
+        error
+      );
+
+      const empty = $("empty");
+
+      if (empty) {
+        empty.textContent =
+          "تعذر تحميل المنتجات حاليًا.";
+        empty.classList.remove("hidden");
+      }
+    }
+  );
+}
+
+/* =========================
+   البحث
+========================= */
+
+function setupSearch() {
+  const search = $("q");
+
+  if (!search) return;
+
+  search.addEventListener(
+    "input",
+    renderProducts
+  );
+}
+
+/* =========================
+   تجهيز الواجهة
+========================= */
+
+function setupExtraUI() {
+  const main = document.querySelector("main");
+
+  if (!main) return;
+
+  /* لو categories مش موجود في index */
+  if (!$("categories")) {
+    const categories = document.createElement("div");
+
+    categories.id = "categories";
+    categories.style.marginTop = "1rem";
+
+    const search = $("q");
+
+    if (search?.parentNode) {
+      search.parentNode.insertBefore(
+        categories,
+        search.nextSibling
+      );
+    } else {
+      main.prepend(categories);
+    }
+  }
+
+  /* صندوق الموقع */
+  if (!$("locationBox")) {
+    const cartDetail = $("detail");
+
+    if (cartDetail) {
+      const box = document.createElement("div");
+
+      box.id = "locationBox";
+      box.className = "card";
+      box.style.marginTop = "1rem";
+
+      box.innerHTML = `
+        <strong>📍 موقع التوصيل</strong>
+
+        <p
+          id="locationStatus"
+          class="msg"
+          style="margin:.5rem 0"
+        >
+          لم يتم تحديد موقعك بعد.
+        </p>
+
+        <button
+          type="button"
+          class="ghost"
+          id="getLocation"
+          style="width:100%"
+        >
+          📍 تحديد موقعي على الخريطة
+        </button>
+
+        <a
+          id="customerMap"
+          href="#"
+          target="_blank"
+          rel="noopener"
+          class="hidden"
+          style="
+            display:block;
+            margin-top:.5rem
+          "
+        >
+          📍 فتح موقعي على Google Maps
+        </a>
+      `;
+
+      cartDetail.insertBefore(
+        box,
+        cartDetail.querySelector("#status")
+      );
+    }
+  }
+
+  $("getLocation")?.addEventListener(
+    "click",
+    setCustomerLocation
+  );
+
+  $("send")?.addEventListener(
+    "click",
+    sendOrder
+  );
+
+  $("toggle")?.addEventListener(
+    "click",
+    () => {
+      $("detail")?.classList.toggle("hidden");
+    }
+  );
+}
+
+/* =========================
+   تشغيل التطبيق
+========================= */
+
+async function init() {
+  setupExtraUI();
+  setupSearch();
+
+  await loadStoreSettings();
+  updateWhatsappButton();
+
+  listenProducts();
+
+  updateCart();
+}
+
+init().catch(error => {
+  console.error(
+    "Application initialization error:",
+    error
+  );
+});
