@@ -21,7 +21,8 @@ import {
   query,
   where,
   orderBy,
-  serverTimestamp
+  serverTimestamp,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 import {
@@ -59,6 +60,7 @@ const auth = getAuth(app);
 
 // ==========================================
 // HTML Escape
+// حماية النصوص قبل عرضها داخل HTML
 // ==========================================
 
 const esc = value => {
@@ -77,6 +79,7 @@ const esc = value => {
 
 // ==========================================
 // Get Staff Role
+// الحصول على صلاحية المستخدم
 // ==========================================
 
 async function getRole(user) {
@@ -121,16 +124,22 @@ async function getRole(user) {
 
 export {
 
+  // ----------------------------------------
   // Firebase instances
+  // ----------------------------------------
   app,
   db,
   auth,
 
+  // ----------------------------------------
   // Helpers
+  // ----------------------------------------
   esc,
   getRole,
 
+  // ----------------------------------------
   // Firestore
+  // ----------------------------------------
   collection,
   addDoc,
   getDocs,
@@ -144,8 +153,11 @@ export {
   where,
   orderBy,
   serverTimestamp,
+  runTransaction,
 
+  // ----------------------------------------
   // Authentication
+  // ----------------------------------------
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut
