@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <title>تفاصيل المنتج - دلوقتي ماركت</title>
+
+  <meta name="theme-color" content="#0b1a4a">
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="logo.png">
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="site-header">
+
+  <div class="header-inner">
+
+    <a href="index.html" class="brand">
+      <img src="logo.png" alt="دلوقتي ماركت">
+      <span>دلوقتي ماركت</span>
+    </a>
+
+    <a href="index.html" class="header-back">
+      العودة للمنتجات
+    </a>
+
+  </div>
+
+</header>
+
+<main class="product-page">
+
+  <div id="productLoading" class="product-loading">
+    جاري تحميل المنتج...
+  </div>
+
+  <section id="productDetails" class="product-details hidden">
+
+    <div class="product-image-box">
+      <img id="productImage" src="" alt="">
+    </div>
+
+    <div class="product-info">
+
+      <div id="productCategory" class="product-category"></div>
+
+      <h1 id="productName"></h1>
+
+      <div class="product-price">
+        <span id="productPrice"></span>
+        <span>جنيه</span>
+      </div>
+
+      <p id="productDescription" class="product-description hidden"></p>
+
+      <div class="product-buy-box">
+
+        <div class="quantity-control">
+
+          <button id="minusQty" type="button">−</button>
+
+          <strong id="productQty">1</strong>
+
+          <button id="plusQty" type="button">+</button>
+
+        </div>
+
+        <button id="addProduct" class="sun product-add-btn" type="button">
+          🛒 أضف للسلة
+        </button>
+
+      </div>
+
+      <p id="productMessage" class="product-message hidden"></p>
+
+    </div>
+
+  </section>
+
+  <section id="notFound" class="not-found hidden">
+
+    <div class="not-found-icon">🛒</div>
+
+    <h2>المنتج غير موجود</h2>
+
+    <p>قد يكون المنتج تم حذفه أو غير متاح حالياً.</p>
+
+    <a href="index.html" class="sun back-home">
+      العودة للمتجر
+    </a>
+
+  </section>
+
+</main>
+
+<div id="miniCart" class="mini-cart hidden">
+
+  <div>
+    <strong>🛒 السلة</strong>
+    <span id="miniCartCount">0 منتج</span>
+  </div>
+
+  <strong id="miniCartTotal">0 جنيه</strong>
+
+  <a href="index.html#cart" class="mini-cart-btn">
+    عرض السلة
+  </a>
+
+</div>
+
+<script type="module" src="product.js"></script>
+
+</body>
+</html>
