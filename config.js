@@ -22,7 +22,8 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  runTransaction
+  runTransaction,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 import {
@@ -56,6 +57,26 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const auth = getAuth(app);
+
+
+// ==========================================
+// Store Categories
+// أقسام المتجر بالترتيب اللي بتظهر بيه للعميل
+// ==========================================
+
+const CATEGORIES = [
+  "بقالة",
+  "ألبان وأجبان وبيض",
+  "خضار وفاكهة",
+  "لحوم ودواجن وأسماك",
+  "مخبوزات وعيش",
+  "مشروبات",
+  "سناكس وحلويات",
+  "مجمدات",
+  "منظفات ومستلزمات المنزل",
+  "عناية شخصية",
+  "سندوتشات"
+];
 
 
 // ==========================================
@@ -124,22 +145,17 @@ async function getRole(user) {
 
 export {
 
-  // ----------------------------------------
   // Firebase instances
-  // ----------------------------------------
   app,
   db,
   auth,
 
-  // ----------------------------------------
   // Helpers
-  // ----------------------------------------
   esc,
   getRole,
+  CATEGORIES,
 
-  // ----------------------------------------
   // Firestore
-  // ----------------------------------------
   collection,
   addDoc,
   getDocs,
@@ -154,10 +170,9 @@ export {
   orderBy,
   serverTimestamp,
   runTransaction,
+  writeBatch,
 
-  // ----------------------------------------
   // Authentication
-  // ----------------------------------------
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut
