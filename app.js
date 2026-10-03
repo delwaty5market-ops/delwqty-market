@@ -1240,4 +1240,898 @@ function setupLocation() {
             lng:
               longitude,
 
-           
+            accuracy:
+              Number.isFinite(
+                accuracy
+              )
+                ? accuracy
+                : null,
+
+            mapUrl:
+              mapUrl
+
+          };
+
+
+          if (locationStatus) {
+
+            locationStatus.textContent =
+              "تم تحديد موقعك بنجاح ✓";
+
+          }
+
+
+          if (customerMap) {
+
+            customerMap.href =
+              mapUrl;
+
+            customerMap.classList.remove(
+              "hidden"
+            );
+
+          }
+
+
+          getLocationBtn.disabled =
+            false;
+
+
+          getLocationBtn.textContent =
+            "📍 تحديث موقعي";
+
+        },
+
+
+        error => {
+
+          console.error(
+            "Location error:",
+            error
+          );
+
+
+          let message =
+            "تعذر تحديد موقعك.";
+
+
+          if (
+            error.code === 1
+          ) {
+
+            message =
+              "تم رفض صلاحية الموقع. اسمح للموقع باستخدام موقعك ثم حاول مرة أخرى.";
+
+          }
+
+
+          if (
+            error.code === 2
+          ) {
+
+            message =
+              "تعذر الحصول على الموقع حالياً. حاول مرة أخرى.";
+
+          }
+
+
+          if (
+            error.code === 3
+          ) {
+
+            message =
+              "انتهى وقت تحديد الموقع. حاول مرة أخرى.";
+
+          }
+
+
+          if (locationStatus) {
+
+            locationStatus.textContent =
+              message;
+
+          }
+
+
+          getLocationBtn.disabled =
+            false;
+
+
+          getLocationBtn.textContent =
+            "📍 تحديد موقعي على الخريطة";
+
+        },
+
+
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
+        }
+
+      );
+
+    }
+  );
+}
+
+
+/* =========================================================
+   إعدادات المحل
+========================================================= */
+
+function normalizeWhatsapp(value) {
+
+  let phone =
+    String(value || "")
+      .replace(
+        /\D/g,
+        ""
+      );
+
+
+  if (!phone) {
+    return "";
+  }
+
+
+  if (
+    phone.startsWith("00")
+  ) {
+
+    phone =
+      phone.substring(2);
+
+  }
+
+
+  if (
+    phone.startsWith("0")
+  ) {
+
+    phone =
+      "20" +
+      phone.substring(1);
+
+  }
+
+
+  return phone;
+}
+
+
+async function loadStoreSettings() {
+
+  try {
+
+    const settingsRef =
+      doc(
+        db,
+        "settings",
+        "store"
+      );
+
+
+    const snapshot =
+      await getDoc(
+        settingsRef
+      );
+
+
+    if (
+      !snapshot.exists()
+    ) {
+      return;
+    }
+
+
+    const data =
+      snapshot.data() || {};
+
+
+    storeWhatsapp =
+      normalizeWhatsapp(
+        data.whatsapp
+      );
+
+
+    storeLocation =
+      String(
+        data.location || ""
+      );
+
+
+    if (
+      whatsappLink &&
+      storeWhatsapp
+    ) {
+
+      whatsappLink.href =
+        `https://wa.me/${storeWhatsapp}`;
+
+      whatsappLink.classList.remove(
+        "hidden"
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Store settings error:",
+      error
+    );
+
+  }
+}
+
+
+/* =========================================================
+   إرسال الطلب
+========================================================= */
+
+async function sendOrder() {
+
+  const cart =
+    cleanCart();
+
+
+  const cartItems =
+    Object.values(cart);
+
+
+  if (!cartItems.length) {
+
+    showStatus(
+      "السلة فارغة.",
+      true
+    );
+
+    return;
+  }
+
+
+  const name =
+    String(
+      nameInput?.value || ""
+    ).trim();
+
+
+  const phone =
+    String(
+      phoneInput?.value || ""
+    ).trim();
+
+
+  const address =
+    String(
+      addressInput?.value || ""
+    ).trim();
+
+
+  if (!name) {
+
+    showStatus(
+      "اكتب اسمك أولاً.",
+      true
+    );
+
+    nameInput?.focus();
+
+    return;
+  }
+
+
+  if (
+    phone.length < 8 ||
+    phone.length > 20
+  ) {
+
+    showStatus(
+      "اكتب رقم موبايل صحيح.",
+      true
+    );
+
+    phoneInput?.focus();
+
+    return;
+  }
+
+
+  if (!address) {
+
+    showStatus(
+      "اكتب عنوان التوصيل بالتفصيل.",
+      true
+    );
+
+    addressInput?.focus();
+
+    return;
+  }
+
+
+  if (!customerLocation) {
+
+    showStatus(
+      "يجب تحديد موقعك على الخريطة قبل تأكيد الطلب.",
+      true
+    );
+
+    return;
+  }
+
+
+  const items =
+    cartItems.map(item => {
+
+      const price =
+        Number(
+          item.price || 0
+        );
+
+      const qty =
+        Number(
+          item.qty || 0
+        );
+
+
+      return {
+
+        id:
+          item.id,
+
+        name:
+          item.name,
+
+        price:
+          price,
+
+        qty:
+          qty,
+
+        total:
+          price * qty
+
+      };
+
+    });
+
+
+  const total =
+    items.reduce(
+      (sum, item) =>
+        sum + item.total,
+      0
+    );
+
+
+  if (total <= 0) {
+
+    showStatus(
+      "إجمالي الطلب غير صحيح.",
+      true
+    );
+
+    return;
+  }
+
+
+  const orderData = {
+
+    name:
+
+      name,
+
+    phone:
+
+      phone,
+
+    address:
+
+      address,
+
+    items:
+
+      items,
+
+    total:
+
+      total,
+
+    status:
+
+      "new",
+
+    createdAt:
+
+      serverTimestamp(),
+
+
+    customerLocation: {
+
+      lat:
+        customerLocation.lat,
+
+      lng:
+        customerLocation.lng,
+
+      accuracy:
+        customerLocation.accuracy,
+
+      mapUrl:
+        customerLocation.mapUrl
+
+    },
+
+
+    lat:
+      customerLocation.lat,
+
+    lng:
+      customerLocation.lng,
+
+    mapUrl:
+      customerLocation.mapUrl,
+
+
+    store: {
+
+      whatsapp:
+        storeWhatsapp || "",
+
+      location:
+        storeLocation || ""
+
+    },
+
+
+    storeWhatsapp:
+      storeWhatsapp || "",
+
+    storeLocation:
+      storeLocation || ""
+
+  };
+
+
+  try {
+
+    if (sendButton) {
+
+      sendButton.disabled =
+        true;
+
+      sendButton.textContent =
+        "جاري إرسال الطلب...";
+
+    }
+
+
+    showStatus(
+      "جاري حفظ الطلب..."
+    );
+
+
+    const orderRef =
+      await addDoc(
+        collection(
+          db,
+          "orders"
+        ),
+        orderData
+      );
+
+
+    /* =====================================================
+       رسالة واتساب
+    ===================================================== */
+
+    let message =
+      "🛒 *طلب جديد - دلوقتي ماركت*";
+
+
+    message +=
+      `\n\n📦 *رقم الطلب:* ${orderRef.id}`;
+
+
+    message +=
+      `\n👤 *الاسم:* ${name}`;
+
+
+    message +=
+      `\n📱 *الموبايل:* ${phone}`;
+
+
+    message +=
+      `\n🏠 *العنوان:* ${address}`;
+
+
+    message +=
+      "\n\n🛍️ *المنتجات:*";
+
+
+    items.forEach(
+      (item, index) => {
+
+        message +=
+          `\n${index + 1}. ${item.name}`;
+
+        message +=
+          ` × ${item.qty}`;
+
+        message +=
+          ` = ${formatPrice(item.total)} جنيه`;
+
+      }
+    );
+
+
+    message +=
+      `\n\n💰 *الإجمالي: ${formatPrice(total)} جنيه*`;
+
+
+    message +=
+      `\n\n📍 *موقع العميل:*`;
+
+    message +=
+      `\n${customerLocation.mapUrl}`;
+
+
+    if (storeLocation) {
+
+      message +=
+        "\n\n🏪 *موقع المحل:*";
+
+      message +=
+        `\n${storeLocation}`;
+
+    }
+
+
+    if (storeWhatsapp) {
+
+      message +=
+        `\n\n📞 *واتساب المحل:* +${storeWhatsapp}`;
+
+    }
+
+
+    /* =====================================================
+       التأكد من وجود رقم واتساب
+    ===================================================== */
+
+    if (!storeWhatsapp) {
+
+      showStatus(
+        "تم حفظ الطلب، لكن رقم واتساب المحل غير موجود في إعدادات المتجر.",
+        true
+      );
+
+
+      if (sendButton) {
+
+        sendButton.disabled =
+          false;
+
+        sendButton.textContent =
+          "تأكيد الطلب";
+
+      }
+
+
+      return;
+    }
+
+
+    const whatsappUrl =
+      `https://wa.me/${storeWhatsapp}?text=${encodeURIComponent(message)}`;
+
+
+    /* تفريغ السلة */
+
+    saveCart({});
+
+    renderCart();
+
+
+    showStatus(
+      "تم تسجيل الطلب بنجاح ✓"
+    );
+
+
+    window.location.href =
+      whatsappUrl;
+
+
+  } catch (error) {
+
+    console.error(
+      "Order error:",
+      error
+    );
+
+
+    showStatus(
+      "حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.",
+      true
+    );
+
+
+    if (sendButton) {
+
+      sendButton.disabled =
+        false;
+
+      sendButton.textContent =
+        "تأكيد الطلب";
+
+    }
+
+  }
+}
+
+
+/* =========================================================
+   البحث
+========================================================= */
+
+function setupSearch() {
+
+  if (!searchInput) {
+    return;
+  }
+
+
+  searchInput.addEventListener(
+    "input",
+    () => {
+
+      renderProducts();
+
+
+      if (clearSearch) {
+
+        if (
+          searchInput.value.trim()
+        ) {
+
+          clearSearch.classList.remove(
+            "hidden"
+          );
+
+        } else {
+
+          clearSearch.classList.add(
+            "hidden"
+          );
+
+        }
+
+      }
+
+    }
+  );
+
+
+  if (clearSearch) {
+
+    clearSearch.addEventListener(
+      "click",
+      () => {
+
+        searchInput.value =
+          "";
+
+
+        clearSearch.classList.add(
+          "hidden"
+        );
+
+
+        selectedCategory =
+          "all";
+
+
+        renderCategories();
+
+        renderProducts();
+
+
+        searchInput.focus();
+
+      }
+    );
+
+  }
+}
+
+
+/* =========================================================
+   السلة فتح / إغلاق
+========================================================= */
+
+function setupCartToggle() {
+
+  if (!cartToggle) {
+    return;
+  }
+
+
+  cartToggle.addEventListener(
+    "click",
+    () => {
+
+      const detail =
+        document.getElementById(
+          "detail"
+        );
+
+
+      if (!detail) {
+        return;
+      }
+
+
+      detail.classList.toggle(
+        "hidden"
+      );
+
+
+      cartToggle.textContent =
+        detail.classList.contains(
+          "hidden"
+        )
+          ? "عرض السلة"
+          : "إخفاء السلة";
+
+    }
+  );
+}
+
+
+/* =========================================================
+   زر تأكيد الطلب
+========================================================= */
+
+function setupOrderButton() {
+
+  if (!sendButton) {
+    return;
+  }
+
+
+  sendButton.addEventListener(
+    "click",
+    sendOrder
+  );
+}
+
+
+/* =========================================================
+   تحميل المنتجات من Firebase
+========================================================= */
+
+function loadProducts() {
+
+  const productsRef =
+    collection(
+      db,
+      "products"
+    );
+
+
+  /*
+    مهم:
+    لا نستخدم orderBy("name") هنا.
+    حتى لا تختفي كل المنتجات إذا كان
+    أحد مستندات المنتجات ناقصه name.
+  */
+
+  onSnapshot(
+
+    productsRef,
+
+    snapshot => {
+
+      console.log(
+        "Products loaded:",
+        snapshot.size
+      );
+
+
+      products =
+        snapshot.docs
+          .map(
+            normalizeProduct
+          )
+          .filter(
+            product =>
+              product.active
+          );
+
+
+      /* ترتيب المنتجات بالاسم */
+
+      products.sort(
+        (a, b) =>
+          a.name.localeCompare(
+            b.name,
+            "ar"
+          )
+      );
+
+
+      console.log(
+        "Active products:",
+        products
+      );
+
+
+      cleanCart();
+
+      renderCategories();
+
+      renderProducts();
+
+      renderCart();
+
+    },
+
+
+    error => {
+
+      console.error(
+        "Firebase products error:",
+        error
+      );
+
+
+      if (empty) {
+
+        empty.classList.remove(
+          "hidden"
+        );
+
+
+        empty.textContent =
+          "تعذر تحميل المنتجات. تأكد من اتصال Firebase وقواعد Firestore.";
+
+      }
+
+    }
+
+  );
+}
+
+
+/* =========================================================
+   بدء التطبيق
+========================================================= */
+
+function init() {
+
+  renderCategories();
+
+  setupSearch();
+
+  setupCartToggle();
+
+  setupOrderButton();
+
+  setupLocation();
+
+  renderCart();
+
+  loadStoreSettings();
+
+  loadProducts();
+
+}
+
+
+/* =========================================================
+   تشغيل
+========================================================= */
+
+init();
